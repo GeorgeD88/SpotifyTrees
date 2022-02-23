@@ -1,0 +1,26 @@
+{
+    "Rap": {
+        "Old School Rap": {
+            "90s Rap": null,
+            "80s Rap": null
+        },
+        "2000s Rap": null,
+        "Modern Rap": null
+    },
+    "EDM": {
+        "House": {
+            "Basshouse": null,
+            "Tech House": null
+        },
+        "Dubstep": null,
+        "Hardstyle": null
+    },
+    "Rock": {
+        "Rock n Roll": null,
+        "Metal": {
+            "Heavy Metal": null,
+            "Black Metal": null,
+            "Death Metal": null
+        }
+    }
+}
