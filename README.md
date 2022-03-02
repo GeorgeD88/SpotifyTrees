@@ -1,5 +1,5 @@
 # SpotifyTrees
-**SpotifyTrees** is a tool written in Python that helps people with huge intricate Spotify libraries manage their playlists; specifically tree systems of playlists containing related genres and subgenres. The point of **SpotifyTrees** is to make it easier to organize songs that apply to multiple subgenres so that you just have to add it once and the program will do the rest of the work for you.<br>
+**SpotifyTrees** is a tool written in Python that leverages the Spotify API to help people with huge intricate Spotify libraries manage their playlists; specifically tree systems of playlists containing related genres and subgenres. The point of **SpotifyTrees** is to make it easier to organize songs that apply to multiple subgenres so that you just have to add it once and the program will do the rest of the work for you.<br>
 _This is for a somewhat niche audience as not many people over-complicate their Spotify libraries like me._
 ## License
 **SpotifyTrees** is free software, distributed under the terms of the [GNU General Public License, version 3](https://www.gnu.org/licenses/gpl-3.0.html).
