@@ -1,14 +1,16 @@
 # SpotifyTrees
-**SpotifyTrees** is a tool written in Python that leverages the Spotify API to help people with huge intricate Spotify libraries manage their playlists; specifically tree systems of playlists containing related genres and subgenres. The point of **SpotifyTrees** is to make it easier to organize songs that apply to multiple subgenres so that you just have to add it once and the program will do the rest of the work for you.<br>
+**SpotifyTrees** is a tool written in Python that leverages the Spotify API to help people with huge intricate Spotify libraries manage their playlists; specifically tree systems of playlists containing related genres and subgenres. The point of **SpotifyTrees** is to make it easier to organize songs that apply to multiple subgenres so that you just have to add it once and the program will do the rest of the work for you.
 _This is for a somewhat niche audience as not many people over-complicate their Spotify libraries like me._
+Towards the right is a diagram I made to visualize the structure of my playlist tree for only EDM subgenres. As you can see it's quite complicated and you can see how something like **SpotifyTrees** becomes extremely useful in keeping up with it.<br>
+<img align="right" src="https://github.com/GeorgeD88/Minesweeper-Solver/blob/main/edm_genre_map.png" alt="Genre Map" width="400">
 ## License
 **SpotifyTrees** is free software, distributed under the terms of the [GNU General Public License, version 3](https://www.gnu.org/licenses/gpl-3.0.html).
 ## What I Learned
 * Spotify API and Spotipy wrapper
-* Tree traversal algorithms
 * Remote development over SSH
+* Tree traversal algorithms
 * Compartmentalizing code
-* Lots of debugging and brainstorming algorithms
+* Lots of debugging and developing algorithms
 ## How it Works
 The way it works is you define a tree of playlists in `ex_genre_tree.json` in a way that the songs in every child node/playlist will be added to its root playlist. For example, you might have a few different Metal playlists such as Heavy Metal, Death Metal, Black Metal, etc. and you want them all to be combined in a universal Metal playlist.<br>
 You would define this as:
