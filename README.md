@@ -3,6 +3,12 @@
 _This is for a somewhat niche audience as not many people over-complicate their Spotify libraries like me._
 ## License
 **SpotifyTrees** is free software, distributed under the terms of the [GNU General Public License, version 3](https://www.gnu.org/licenses/gpl-3.0.html).
+## What I Learned
+* Spotify API and Spotipy wrapper
+* Tree traversal algorithms
+* Remote development over SSH
+* Compartmentalizing code
+* Lots of debugging and brainstorming algorithms
 ## How it Works
 The way it works is you define a tree of playlists in `ex_genre_tree.json` in a way that the songs in every child node/playlist will be added to its root playlist. For example, you might have a few different Metal playlists such as Heavy Metal, Death Metal, Black Metal, etc. and you want them all to be combined in a universal Metal playlist.<br>
 You would define this as:
