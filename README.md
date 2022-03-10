@@ -10,6 +10,7 @@ Below to the right is a diagram I made to visualize the structure of my playlist
 * Spotify API and Spotipy wrapper
 * Remote development over SSH
 * Tree traversal algorithms
+* Using hashmaps
 * Compartmentalizing code
 * Lots of debugging and developing algorithms
 ## How it Works
