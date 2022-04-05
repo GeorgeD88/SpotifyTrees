@@ -110,7 +110,7 @@ class Datapipe:
 
         def nested():
             for p in results['items']:
-                try:
+                if p['name'] in playlists:
                     prev = playlists[p['name']]
                     print(f"playlist \"{p['name']}\" already exists with ID \"{prev}\" (P) yet same name was found with ID \"{p['id']}\" (N)")
                     while True:
@@ -122,7 +122,7 @@ class Datapipe:
                             break
                         else:
                             print('unknown input, use P or N')
-                except KeyError:
+                else:
                     playlists[p['name']] = p['id']
 
         nested()
