@@ -85,8 +85,8 @@ class Extra:
             topheavy_info (dict): Topheavy info to convert
             id_name_pairs (dict): Dict of ID name pairs to convert IDs
         """
-        self.utils.ids2names_topheavy(topheavy_info, id_name_pairs)
-        self.utils.count_topheavy(topheavy_info)
+        self.ids2names_topheavy(topheavy_info, id_name_pairs)
+        self.count_topheavy(topheavy_info)
 
     def ids2names_topheavy(self, topheavy_info: dict, id_name_pairs: dict):
         """
@@ -99,7 +99,7 @@ class Extra:
         """
         for subplaylist in topheavy_info.values():
             if type(subplaylist['child playlists']) is dict:
-                self.utils.ids2names_topheavy(subplaylist['child playlists'], id_name_pairs)
+                self.ids2names_topheavy(subplaylist['child playlists'], id_name_pairs)
             elif subplaylist['child playlists'] is None:
                 pass  # the key would've already been converted
             else:
