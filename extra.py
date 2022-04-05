@@ -56,6 +56,11 @@ class Extra:
             images[img['height']] = img['url']  # defines new key with image height as key and link as the value
         return images
 
+    def get_artist_link(self, search_artist: str) -> str:
+        """ Gets artist link from given search query. """
+        results = self.sp.search(q='artist:' + search_artist, type='artist', limit=1)
+        return results['artists']['items'][0]['external_urls']['spotify']
+
 # ⚠️ FUTURE BUILD 🔨⚠️
     # NOTE: DOPE IDEA TO GET ALL SONGS FROM ARTIST PAGE
     def pull_artist_releases(self, artist_id):
