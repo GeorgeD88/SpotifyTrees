@@ -129,7 +129,8 @@ class Orgo:
                                                          # I think it's cause of the new local files it's starting to include those in the list ig
 
                 # [3] push children's new tracks to this node
-                self.push_new(k, children_new)
+                if len(children_new) > 0:
+                    self.push_new(k, children_new)
 
                 # [4] combine new and child
                 self.utils.extend_nodup(children_new, here_new)  # children_new + here_new
@@ -209,7 +210,7 @@ class Orgo:
         # iterates through every node (k) in this level and recurses its children (v)
         for k, v in nodes.items():
             if v is None:
-                leaf_tracks = self.datapipe.get_playlist_tracks(k)  # [1]
+                leaf_tracks = self.utils.filter_null(self.datapipe.get_playlist_tracks(k))  # [1]
                 self.utils.extend_nodup(accum_tracks, leaf_tracks)  # [2]
                 subtree[k] = {'missing tracks': None, 'child playlists': None}  # [3]
             else:
@@ -217,7 +218,7 @@ class Orgo:
                 child_tracks, child_subtree = self.check_topheavy(v)
 
                 # [2] get this playlist's tracks
-                parent_tracks = self.datapipe.get_playlist_tracks(k)
+                parent_tracks = self.utils.filter_null(self.datapipe.get_playlist_tracks(k))
 
                 # [3] find difference in playlists
                 difference = self.utils.not_in(parent_tracks, child_tracks)  # get every song in this playlist that's not below this playlist
