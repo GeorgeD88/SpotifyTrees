@@ -28,7 +28,7 @@ class MyUtils:
             while True:
                 cleaning.remove(None)  # removes None
         except ValueError:
-            pass
+            return
 
     # ===== AUTO RESULTS =====
     def auto_results(self, nest_func, results: dict):
