@@ -210,7 +210,8 @@ class Orgo:
         # iterates through every node (k) in this level and recurses its children (v)
         for k, v in nodes.items():
             if v is None:
-                leaf_tracks = self.utils.filter_null(self.datapipe.get_playlist_tracks(k))  # [1]
+                leaf_tracks = self.datapipe.get_playlist_tracks(k)  # [1]
+                self.utils.filter_null(leaf_tracks)
                 self.utils.extend_nodup(accum_tracks, leaf_tracks)  # [2]
                 subtree[k] = {'missing tracks': None, 'child playlists': None}  # [3]
             else:
@@ -218,7 +219,8 @@ class Orgo:
                 child_tracks, child_subtree = self.check_topheavy(v)
 
                 # [2] get this playlist's tracks
-                parent_tracks = self.utils.filter_null(self.datapipe.get_playlist_tracks(k))
+                parent_tracks = self.datapipe.get_playlist_tracks(k)
+                self.utils.filter_null(parent_tracks)
 
                 # [3] find difference in playlists
                 difference = self.utils.not_in(parent_tracks, child_tracks)  # get every song in this playlist that's not below this playlist
@@ -257,7 +259,7 @@ class Orgo:
         # TODO: make to check and only remove songs that are actually in the playlist to avoid errors
         chunk = self.datapipe.get_playlist_tracks(subtract_id)
         self.subtract_chunk(playlist_id, chunk)
-        print(f'removed playlist "{self.utils.playlist_name_from_id(subtract_id)}" ({len(chunk)} songs) from playlist {playlist_name_from_id(sp, playlist_id)}')
+        print(f'removed playlist "{self.utils.playlist_name_from_id(subtract_id)}" ({len(chunk)} songs) from playlist {self.utils.playlist_name_from_id(playlist_id)}')
 
 
     def cross_related_artists(self):
