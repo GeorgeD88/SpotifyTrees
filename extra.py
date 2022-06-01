@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+
 from datapipe import Datapipe
 from myutils import MyUtils
 from copy import copy
@@ -51,6 +52,14 @@ class Extra:
     def album_cover(self, album_id: str) -> dict:
         """ Given album ID, returns dict containing links to the album's cover in 3 resolutions. """
         covers = self.sp.album(album_id)['images']
+        images = {}
+        for img in covers:
+            images[img['height']] = img['url']  # defines new key with image height as key and link as the value
+        return images
+
+    def playlist_cover(self, playlist_id: str) -> dict:
+        """ Given playlist ID, returns dict containing links to the playlist's cover in 3 resolutions. """
+        covers = self.sp.playlist(playlist_id)['images']
         images = {}
         for img in covers:
             images[img['height']] = img['url']  # defines new key with image height as key and link as the value
@@ -123,7 +132,7 @@ class Extra:
         """ Goes through the dict of topheavy missing tracks and prints the number of missing tracks for each playlist. """
         for subplaylist in topheavy_info.values():
             if type(subplaylist['child playlists']) is dict:
-                self.utils.count_topheavy(subplaylist['child playlists'])
+                self.count_topheavy(subplaylist['child playlists'])
             elif subplaylist['child playlists'] is None:
                 pass  # the key would've already been converted
             else:
@@ -170,3 +179,30 @@ class Extra:
             track_details = self.sp.track(t_id)
             artists = track_details['artists']
             print(f"{track_details['name']} by {', '.join(art['name'] for art in artists)}")
+
+    def artist_genres(self, artists: list):
+        """ Returns the genres of a list of artists. """
+        genres = {}
+        for ar in artists:
+            ar_data = self.sp.artist(ar)
+            ar_name = ar_data['name']
+            ar_genres = ar_data['genres']
+            genres[ar_name] = ar_genres
+        return genres
+
+    def track_tempos(self, tracks: list):
+        """ Returns the tempos of a list of tracks. """
+        tracks_data = self.sp.audio_features(tracks)
+        features = {}
+        for t in range(len(tracks)):
+            tr_data = tracks_data[t]
+            tr_tempo = tr_data['tempo']
+            tr_signature = tr_data['time_signature']
+            tr_id = tr_data['id']
+            tr_name = self.sp.track(tr_id)['name']
+            features[tr_id] = {
+                'name': tr_name,
+                'tempo': tr_tempo,
+                'time_signature': tr_signature
+            }
+        return features
