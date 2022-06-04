@@ -9,7 +9,7 @@ Below to the right is a diagram I made to visualize the structure of my playlist
 ## What I Learned
 * Spotify API and Spotipy wrapper
 * Remote development over SSH
-* Tree traversal algorithms: depth first search/postorder traversal
+* Tree traversal algorithms like depth first search/post order traversal
 * Using hashmaps
 * Compartmentalizing code
 * Lots of debugging and developing algorithms
