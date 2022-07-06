@@ -31,7 +31,7 @@ _Note that your tree would usually be a lot more complicated._
 Before touching any files, you need to trim `ex_` from any of the file names that start with it. The `ex_` is there to differentiate the repo versions of the files from my personal versions, as these files contain personalized or sensitive data.<br>
 Once you remove the `ex_` from the file names, it's time to fill out each file with the necessary data; which is explained below.<br>
 ### creds.py
-This file stores the credentials for our Spotify API. You can create a Spotify app on your [Spotify developer dashboard](https://developer.spotify.com/dashboard/applications) if you haven't already created it. Once you've created your Spotify app, copy the client ID and client secret from the app page to the appropriate variables in the file, as well as add a redirect URI.
+This file stores the credentials for our Spotify API. You can create a Spotify app on your [Spotify developer dashboard](https://developer.spotify.com/dashboard/applications){:target="_blank" rel="noopener"} if you haven't already created it. Once you've created your Spotify app, copy the client ID and client secret from the app page to the appropriate variables in the file, as well as add a redirect URI.
 ### genre_tree.json
 This file stores the tree of playlist names that describe the way your playlists relate to each other. Remember that the songs from every child playlist/subtree get added to the parent playlists, so make sure you don't mess up the order and fill up the wrong playlists. Below is a simple example:
 ```json
