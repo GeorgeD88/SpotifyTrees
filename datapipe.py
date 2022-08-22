@@ -9,9 +9,13 @@ class Datapipe:
     GET_MAX = 50
     SCOPES = [
         "playlist-modify-private",
-        "playlist-read-private",
+        # "playlist-read-private",
         "playlist-modify-public",
-        "user-library-read"
+        "user-read-currently-playing",
+        "user-read-playback-state",
+        "user-read-playback-position",
+        "user-library-modify",
+        # "user-library-read"
     ]
 
     def __init__(self, client_id, client_secret, redirect_uri) -> None:
