@@ -1,29 +1,17 @@
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from myutils import MyUtils
+from constants import *
 
 
 class Datapipe:
-
-    # constants
-    GET_MAX = 50
-    SCOPES = [
-        "playlist-modify-private",
-        # "playlist-read-private",
-        "playlist-modify-public",
-        "user-read-currently-playing",
-        "user-read-playback-state",
-        "user-read-playback-position",
-        "user-library-modify",
-        # "user-library-read"
-    ]
 
     def __init__(self, client_id, client_secret, redirect_uri) -> None:
         self.sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
             client_id=client_id,
             client_secret=client_secret,
             redirect_uri=redirect_uri,
-            scope=self.SCOPES
+            scope=SCOPES
         ))
         self.utils = MyUtils(self.sp)
 
@@ -227,9 +215,9 @@ class Datapipe:
                 }
         """
         playlist_tracks = self.get_playlist_tracks(playlist_id)
-        if len(playlist_tracks) > self.GET_MAX:  # can only check 50 songs at a time
+        if len(playlist_tracks) > GET_MAX:  # can only check 50 songs at a time
             tracks_exist = []
-            tracks_chunks = self.utils.divide_chunks(playlist_tracks, self.GET_MAX)  # generator
+            tracks_chunks = self.utils.divide_chunks(playlist_tracks, GET_MAX)  # generator
             for chunk in tracks_chunks:
                 tracks_exist.extend(self.sp.current_user_saved_tracks_contains(chunk))  # checks if these tracks are saved
         else:

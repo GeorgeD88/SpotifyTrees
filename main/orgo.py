@@ -1,7 +1,8 @@
 from datetime import datetime
 from datapipe import Datapipe
-from extra import Extra
+from random_tools import Extra
 from creds import *
+from constants import *
 import spotipy
 
 
@@ -156,8 +157,8 @@ class Orgo:
         # checking if there are still any tracks to add after removing existing ones
         if len(new_tracks_only) > 0:
             # checks if tracks needs to be broken up into chunks to avoid API call limit
-            if len(new_tracks_only) > self.ADD_MAX:  # NOTE: convert this into function
-                tracks_chunks = self.utils.divide_chunks(new_tracks_only, self.ADD_MAX)
+            if len(new_tracks_only) > add_MAX:  # NOTE: convert this into function
+                tracks_chunks = self.utils.divide_chunks(new_tracks_only, add_MAX)
                 for chunk in tracks_chunks:
                     self.sp.playlist_add_items(playlist_id, chunk)
             else:
