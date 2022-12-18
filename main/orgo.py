@@ -1,7 +1,6 @@
 from datetime import datetime
 from datapipe import Datapipe
-from myutils import MyUtils
-from extra import *
+from extra import Extra
 from creds import *
 import spotipy
 

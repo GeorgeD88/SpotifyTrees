@@ -62,6 +62,41 @@ class Datapipe:
 
         return tracks
 
+    def get_playlist_track_details(self, playlist_id: str) -> dict[str, tuple[int, str]]:
+        """ Given a playlist ID, returns a list of all of the tracks in that playlist with their respective info. """
+        pass
+        """results = self.sp.playlist_tracks(playlist_id)
+        tracks = {}
+
+        def nested():
+            for t in results['items']:
+                try:
+                    tracks[t['track']['id']] = (int(['track']['album']['release_date'][:4]), t['track']['artists'][0]['id'])
+                except SyntaxWarning:
+                    print(t)"""
+
+        nested()
+        while results['next']:
+            results = self.sp.next(results)
+            nested()
+
+        return tracks
+
+    def get_playlist_artists(self, playlist_id: str) -> set[str]:
+        """ Given a playlist ID, returns a list of names for all of the artists in that playlist. """
+        results = self.sp.playlist_tracks(playlist_id)
+        artists = set()
+
+        def nested():
+            artists.update(set(t['track']['artists'][0]['id'] for t in results['items']))
+
+        nested()
+        while results['next']:
+            results = self.sp.next(results)
+            nested()
+
+        return artists
+
     def get_playlist_track_names(self, playlist_id: str) -> list:
         """ Given a playlist ID, returns a list of names for all of the tracks in that playlist. """
         results = self.sp.playlist_tracks(playlist_id)
