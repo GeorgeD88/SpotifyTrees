@@ -1,6 +1,9 @@
+# Spotify API
+import spotipy
+
+# Miscellaneous
 from datetime import datetime, timedelta
 from copy import copy
-import spotipy
 import json
 
 
