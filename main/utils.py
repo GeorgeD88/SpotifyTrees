@@ -4,7 +4,7 @@ import spotipy
 import json
 
 
-class MyUtils:
+class Utils:
 
     def __init__(self, sp: spotipy.Spotify) -> None:
         self.sp = sp
