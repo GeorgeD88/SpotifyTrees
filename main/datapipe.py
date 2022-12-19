@@ -5,6 +5,8 @@ from constants import *
 
 
 class Datapipe:
+    """ Wrapper that makes it clean and easy to retrieve Spotify data.
+        (avoids you having you to deal with the mess of JSON data) """
 
     def __init__(self, client_id, client_secret, redirect_uri) -> None:
         self.sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
