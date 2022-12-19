@@ -1,6 +1,6 @@
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
-from myutils import MyUtils
+from main.utils import Utils
 from constants import *
 
 
@@ -15,7 +15,7 @@ class Datapipe:
             redirect_uri=redirect_uri,
             scope=SCOPES
         ))
-        self.utils = MyUtils(self.sp)
+        self.utils = Utils(self.sp)
 
     def my_id(self) -> str:
         return self.sp.current_user()['id']
