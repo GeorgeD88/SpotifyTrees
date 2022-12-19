@@ -213,6 +213,16 @@ class Trees:
         """
         self.sp.artist_related_artists()
 
+    # === TIME RECORDING ===
+    def get_time_checked(self, filename: str = 'time_checked') -> datetime:
+        """ Returns the time checked from the JSON file. """
+        time_string = self.read_json(filename)[filename]
+        return self.convert_from_isostring(time_string)
+
+    def record_time_checked(self, time_checked: datetime, filename: str = 'time_checked'):
+        """ Records the time checked into the JSON file. """
+        time_string = self.convert_to_isostring(time_checked)
+        self.write_json(filename, {filename: time_string})
 
     # ===== FINDING SONGS IN TREE =====
     def locate_songs(self, tracks: list, plist_tree: dict) -> dict:
