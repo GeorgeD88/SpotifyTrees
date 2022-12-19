@@ -21,33 +21,19 @@ class Utils:
         # print(scope_string := scope_string[:-1])
         return scope_string
 
-    def print_track_names(self, tracks: list):
-        """ Given a list of track IDs, prints each track name. """
-        for tr in tracks:
-            print(self.sp.track(tr)['name'])
-
-    def filter_null(self, cleaning: list):
-        """ Removes all None objects from a list. """
-        try:
-            while True:
-                cleaning.remove(None)  # removes None
-        except ValueError:
-            return
-
-    # === AUTO RESULTS ===
-    def auto_results(self, nest_func, results: dict):
-        """ Automatically pages through data from API call. """
-        nest_func()
-
+    # === PAGE ALL RESULTS ===
+    def page_all_results(self, nested_func, results: dict):
+        """ Automatically pages through data from API call and runs given function on every result. """
+        nested_func()
         while results['next']:
             results = self.sp.next(results)
-            nest_func()
+            nested_func()
 
-    def auto_results_lite(self, nest_func, results: dict):
-        """ Automatically pages through data from API call, w/o initial call & only does paging part. """
+    def page_next_results(self, nested_func, results: dict):
+        """ Automatically pages through data from API call and runs given function on every result, (w/o initial call). """
         while results['next']:
             results = self.sp.next(results)
-            nest_func()
+            nested_func()
 
     # === JSON READ/WRITE ===
     def read_json(self, filename: str) -> dict:
@@ -74,17 +60,6 @@ class Utils:
         datetime_obj = datetime_obj.replace(microsecond=0)  # then trims off milliseconds
 
         return datetime.strftime(datetime_obj, "%Y-%m-%dT%H:%M:%SZ")
-
-    # === TIME RECORDING ===
-    def get_time_checked(self, filename: str = 'time_checked') -> datetime:
-        """ Returns the time checked from the JSON file. """
-        time_string = self.read_json(filename)[filename]
-        return self.convert_from_isostring(time_string)
-
-    def record_time_checked(self, time_checked: datetime, filename: str = 'time_checked'):
-        """ Records the time checked into the JSON file. """
-        time_string = self.convert_to_isostring(time_checked)
-        self.write_json(filename, {filename: time_string})
 
     # === LIST TOOLS ===
     def not_in(self, pulling_from: list, avoding: list) -> list:
@@ -179,13 +154,18 @@ class Utils:
             # pop the old pair with the key still being the ID instead of the name
             id_tree.pop(playlist)
 
-# === TREE TRAVERSAL ===
-"""
-NOTE: This would be a big refactoring task but
-I think I should try to make a tree traversal function
-that can stand on its own and then call it wherever
-there is need to traverse a tree.
-FIXME: The challenge that comes to mind is that most of these
-functions using traversal need to do stuff within the traversal
-(hence during the function call) which isn't really possible (I think).
-"""
+    # === MISCELLANEOUS ===
+    def print_track_names(self, tracks: list):
+        """ Given a list of track IDs, prints each track name. """
+        for tr in tracks:
+            print(self.sp.track(tr)['name'])
+
+    def filter_null(self, cleaning: list):
+        """ Removes all None objects from a list. """
+        cleaned = []
+        # adds every non-Null item to new list
+        for elem in cleaning:
+            if elem is not None:
+                cleaned.append(elem)
+        # sets original list reference to cleaned list
+        cleaning = cleaned
