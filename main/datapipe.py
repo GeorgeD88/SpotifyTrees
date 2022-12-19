@@ -1,6 +1,9 @@
+# Spotify API
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
-from main.utils import Utils
+
+# Utils & Constants
+from utils import Utils
 from constants import *
 
 
@@ -8,100 +11,20 @@ class Datapipe:
     """ Wrapper that makes it clean and easy to retrieve Spotify data.
         (avoids you having you to deal with the mess of JSON data) """
 
-    def __init__(self, client_id, client_secret, redirect_uri) -> None:
+    def __init__(self, client_id, client_secret, redirect_uri, scopes):
         self.sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
             client_id=client_id,
             client_secret=client_secret,
             redirect_uri=redirect_uri,
-            scope=SCOPES
+            scope=scopes
         ))
         self.utils = Utils(self.sp)
 
     def my_id(self) -> str:
+        """ Returns ID of user logged into the API. """
         return self.sp.current_user()['id']
 
-# ⚠️ BUILD IN PROGRESS 🔨⚠️
-    def audio_info(self, track_id: str):
-        """ Given track ID, returns audio nerd stats on it. """
-        self.sp.audio_analysis(track_id)
-        self.sp.audio_features(track_id)
-
-    def new_playlist(self, playlist_name: str) -> str:
-        """ Given a playlist name, creates a new playlist under that name and returns the ID of that new playlist. """
-        self.sp.user_playlist_create(self.my_id(), playlist_name)
-        return self.utils.playlist_id_from_name(playlist_name)
-
-    def add_playlist_tracks(self, playlist_id: str, tracks: list):
-        """ Given a playlist ID and list of tracks, adds the tracks to the playlist. """
-        tracks_chunks = self.utils.divide_chunks(tracks, 100)
-        for chunk in tracks_chunks:
-            self.sp.playlist_add_items(playlist_id, chunk)
-
-    def get_playlist_tracks(self, playlist_id: str) -> list:
-        """ Given a playlist ID, returns a list of IDs for all of the tracks in that playlist. """
-        results = self.sp.playlist_tracks(playlist_id)
-        tracks = []
-
-        def nested():
-            tracks.extend([t['track']['id'] for t in results['items']])
-
-        nested()
-        while results['next']:
-            results = self.sp.next(results)
-            nested()
-
-        return tracks
-
-    def get_playlist_track_details(self, playlist_id: str) -> dict[str, tuple[int, str]]:
-        """ Given a playlist ID, returns a list of all of the tracks in that playlist with their respective info. """
-        pass
-        """results = self.sp.playlist_tracks(playlist_id)
-        tracks = {}
-
-        def nested():
-            for t in results['items']:
-                try:
-                    tracks[t['track']['id']] = (int(['track']['album']['release_date'][:4]), t['track']['artists'][0]['id'])
-                except SyntaxWarning:
-                    print(t)"""
-
-        nested()
-        while results['next']:
-            results = self.sp.next(results)
-            nested()
-
-        return tracks
-
-    def get_playlist_artists(self, playlist_id: str) -> set[str]:
-        """ Given a playlist ID, returns a list of names for all of the artists in that playlist. """
-        results = self.sp.playlist_tracks(playlist_id)
-        artists = set()
-
-        def nested():
-            artists.update(set(t['track']['artists'][0]['id'] for t in results['items']))
-
-        nested()
-        while results['next']:
-            results = self.sp.next(results)
-            nested()
-
-        return artists
-
-    def get_playlist_track_names(self, playlist_id: str) -> list:
-        """ Given a playlist ID, returns a list of names for all of the tracks in that playlist. """
-        results = self.sp.playlist_tracks(playlist_id)
-        tracks = []
-
-        def nested():
-            tracks.extend([t['track']['name'] for t in results['items']])
-
-        nested()
-        while results['next']:
-            results = self.sp.next(results)
-            nested()
-
-        return tracks
-
+    # === USER PLAYLISTS ===
     def get_user_playlists(self) -> list:
         """ Returns a list of IDs of all of the user's playlists. """
         results = self.sp.current_user_playlists()
@@ -180,6 +103,84 @@ class Datapipe:
 
         return playlists
 
+    # === PLAYLIST CREATION/MANAGEMENT ===
+    def new_playlist(self, playlist_name: str) -> str:
+        """ Creates a new playlist with given name and returns the newly created playlist's ID. """
+        self.sp.user_playlist_create(self.my_id(), playlist_name)
+        return self.utils.playlist_id_from_name(playlist_name)
+
+    def add_playlist_tracks(self, playlist_id: str, tracks: list):
+        """ Adds the given tracks to the given playlist. """
+        tracks_chunks = self.utils.divide_chunks(tracks, 100)
+        for chunk in tracks_chunks:
+            self.sp.playlist_add_items(playlist_id, chunk)
+
+    # === PLAYLIST CONTENTS ===
+    def get_playlist_tracks(self, playlist_id: str) -> list:
+        """ Returns all the tracks (IDs) in the given playlist. """
+        results = self.sp.playlist_tracks(playlist_id)
+        tracks = []
+
+        def nested():
+            tracks.extend([t['track']['id'] for t in results['items']])
+
+        nested()
+        while results['next']:
+            results = self.sp.next(results)
+            nested()
+
+        return tracks
+
+    def get_playlist_track_details(self, playlist_id: str) -> dict[str, tuple[int, str]]:
+        """ Given a playlist ID, returns a list of all of the tracks in that playlist with their respective info. """
+        pass
+        """results = self.sp.playlist_tracks(playlist_id)
+        tracks = {}
+
+        def nested():
+            for t in results['items']:
+                try:
+                    tracks[t['track']['id']] = (int(['track']['album']['release_date'][:4]), t['track']['artists'][0]['id'])
+                except SyntaxWarning:
+                    print(t)"""
+
+        nested()
+        while results['next']:
+            results = self.sp.next(results)
+            nested()
+
+        return tracks
+
+    def get_playlist_artists(self, playlist_id: str) -> set[str]:
+        """ Given a playlist ID, returns a list of names for all of the artists in that playlist. """
+        results = self.sp.playlist_tracks(playlist_id)
+        artists = set()
+
+        def nested():
+            artists.update(set(t['track']['artists'][0]['id'] for t in results['items']))
+
+        nested()
+        while results['next']:
+            results = self.sp.next(results)
+            nested()
+
+        return artists
+
+    def get_playlist_track_names(self, playlist_id: str) -> list:
+        """ Given a playlist ID, returns a list of names for all of the tracks in that playlist. """
+        results = self.sp.playlist_tracks(playlist_id)
+        tracks = []
+
+        def nested():
+            tracks.extend([t['track']['name'] for t in results['items']])
+
+        nested()
+        while results['next']:
+            results = self.sp.next(results)
+            nested()
+
+        return tracks
+
     def get_playlist_tracks_dates(self, playlist_id: str) -> dict:
         """ Given a playlist ID, returns a dict of IDs with corresponding dates of when they were added to the playlist. """
         # FIXME: shorten that docstring maybe ^^
@@ -198,7 +199,7 @@ class Datapipe:
 
         return dates_added
 
-    def playlist_not_saved(self, playlist_id: str) -> dict:
+    def get_unsaved_tracks(self, playlist_id: str) -> dict:
         """
         Finds out what songs in a playlist are not saved and returns a dict of track IDs and corresponding booleans.
         # FIXME: shorten that docstring maybe ^^
@@ -230,9 +231,3 @@ class Datapipe:
         resultant = dict(zip(playlist_tracks, tracks_exist))  # B)
 
         return resultant
-
-
-    # sp = initialize_spotipy()
-
-    # verdict = playlist_not_saved("36wQSt3t9aNempyQdkWnbY")
-    # more_itertools.consume(print(self.sp.track(k)['name']) for k, v in verdict.items() if not v)
