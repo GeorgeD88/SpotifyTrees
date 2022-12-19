@@ -1,36 +1,25 @@
-from datetime import datetime
+# Spotify API
 from datapipe import Datapipe
-from creds import *
-from constants import *
 import spotipy
 
+# Constants & Creds
+from constants import *
+from creds import *
 
-class Orgo:
+# Miscellaneous
+from datetime import datetime
+
+
+class Trees:
 
     def __init__(self) -> None:
-        self.datapipe = Datapipe(CLIENT_ID, CLIENT_SECRET, SPOTIPY_REDIRECT_URI)
-        self.sp = self.datapipe.sp
-        self.utils = self.datapipe.utils
+        # Spotipy is initialized in datapipe because it handles the API/data stuff
+        self.datapipe = Datapipe(CLIENT_ID, CLIENT_SECRET, SPOTIPY_REDIRECT_URI, SCOPES)
+        self.sp = self.datapipe.sp  # pull Spotipy instance out incase we need to make direct calls
+        self.utils = self.datapipe.utils  # use the same instance of utils in both datapipe and trees
 
-    # ===== MAIN ORGOMASTER FUNCTION =====
     def update_playlist_tree(self, tree_of_ids: dict) -> list:
-        """
-        Combines all the function calls used to update the playlist tree into one function.
-
-        Args:
-            sp (spotipy.Spotify): Spotify API client
-            tree_of_ids (dict): Tree of playlist IDs
-
-        Returns:
-            list: Returns a list of the new tracks found within the whole playlist tree::
-
-                [
-                    "0QQwlREWKKxRUPPbpaKZJS",
-                    "4rwpZEcnalkuhPyGkEdhu0",
-                    "4Loz57Oql0UYKtdRoGCumT",
-                    "..."
-                ]
-        """
+        """ Combines all the function calls used to update the playlist tree into one function. """
         last_checked = self.utils.get_time_checked()  # gets time of last program run (last checked)
         print('finding new songs!')
         new_songs = self.traverse_playlists(tree_of_ids, last_checked)  # updates tree and returns new songs found
@@ -51,24 +40,7 @@ class Orgo:
 
 
     def check_new(self, playlist_id: str, last_checked: datetime) -> list:
-        """
-        Finds new tracks in playlist added after the playlist tree was last updated/checked.
-
-        Args:
-            sp (spotipy.Spotify): Spotify API client
-            playlist_id (str): ID of the playlist being checked
-            last_checked (datetime): Time the playlists were last updated/checked
-
-        Returns:
-            list: Returns a list of the new tracks found within this playlist::
-
-                [
-                    "0QQwlREWKKxRUPPbpaKZJS",
-                    "4rwpZEcnalkuhPyGkEdhu0",
-                    "4Loz57Oql0UYKtdRoGCumT",
-                    "..."
-                ]
-        """
+        """ Finds new tracks in playlist added after the playlist tree was last updated/checked. """
         results = self.sp.playlist_tracks(playlist_id)  # first pull of tracks from playlist
         new_tracks = []  # defines list for new tracks found
 
@@ -87,24 +59,7 @@ class Orgo:
 
 
     def traverse_playlists(self, nodes: dict, last_checked: datetime) -> list:
-        """
-        Traverses the playlist tree and pushes all new songs found up the tree.
-
-        Args:
-            sp (spotipy.Spotify): Spotify API client
-            nodes (dict): Subtree of playlist ID nodes and their children
-            last_checked (datetime): Time the playlists were last updated/checked
-
-        Returns:
-            list: Returns a list of the new tracks found within the whole playlist tree::
-
-                [
-                    "0QQwlREWKKxRUPPbpaKZJS",
-                    "4rwpZEcnalkuhPyGkEdhu0",
-                    "4Loz57Oql0UYKtdRoGCumT",
-                    "..."
-                ]
-        """
+        """ Traverses the playlist tree and pushes all new songs found up the tree. """
         new_tracks = []  # defines list for new tracks collectively found in this level
 
         # iterates through every node (k) in this level and recurses its children (v)
@@ -136,14 +91,7 @@ class Orgo:
 
 
     def push_new(self, playlist_id: str, tracks_add: list):
-        """
-        Add tracks to Spotify playlists, while avoiding duplicates.
-
-        Args:
-            sp (spotipy.Spotify): Spotify API client
-            playlist_id (str): ID of the playlist being added to
-            last_checked (datetime): Time the playlists were last updated/checked
-        """
+        """ Add tracks to Spotify playlists, while avoiding duplicates. """
         playlist_tracks = self.datapipe.get_playlist_tracks(playlist_id)
         # removes existing tracks in playlist from list tracks to add
         new_tracks_only = self.utils.not_in(tracks_add, playlist_tracks)
@@ -151,8 +99,8 @@ class Orgo:
         # checking if there are still any tracks to add after removing existing ones
         if len(new_tracks_only) > 0:
             # checks if tracks needs to be broken up into chunks to avoid API call limit
-            if len(new_tracks_only) > add_MAX:  # NOTE: convert this into function
-                tracks_chunks = self.utils.divide_chunks(new_tracks_only, add_MAX)
+            if len(new_tracks_only) > ADD_MAX:  # NOTE: convert this into function
+                tracks_chunks = self.utils.divide_chunks(new_tracks_only, ADD_MAX)
                 for chunk in tracks_chunks:
                     self.sp.playlist_add_items(playlist_id, chunk)
             else:
