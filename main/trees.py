@@ -12,7 +12,7 @@ from datetime import datetime
 
 class Trees:
 
-    def __init__(self) -> None:
+    def __init__(self):
         # Spotipy is initialized in datapipe because it handles the API/data stuff
         self.dp = Datapipe(CLIENT_ID, CLIENT_SECRET, SPOTIPY_REDIRECT_URI, SCOPES)
         self.sp = self.dp.sp  # pull Spotipy instance out incase we need to make direct calls
