@@ -1,7 +1,7 @@
 # Spotify API
 import spotipy
 
-# Miscellaneous
+# Other
 from datetime import datetime, timedelta
 from copy import copy
 import json
@@ -9,15 +9,16 @@ import json
 
 class Utils:
 
-    def __init__(self, sp: spotipy.Spotify) -> None:
+    def __init__(self, sp: spotipy.Spotify):
         self.sp = sp
 
+    # === API/AUTH ===
     def generate_scope_string(self, list_of_scopes: list) -> str:
-        """ Given list of scopes, returns a string of all of them concatenated together for auth purposes. """
+        """ Given a list of scopes, returns a string of all of them concatenated (for auth). """
         scope_string = ''
         for scp in list_of_scopes:
             scope_string += scp + ' '
-        print(scope_string := scope_string[:-1])
+        # print(scope_string := scope_string[:-1])
         return scope_string
 
     def print_track_names(self, tracks: list):
@@ -33,7 +34,7 @@ class Utils:
         except ValueError:
             return
 
-    # ===== AUTO RESULTS =====
+    # === AUTO RESULTS ===
     def auto_results(self, nest_func, results: dict):
         """ Automatically pages through data from API call. """
         nest_func()
@@ -48,12 +49,11 @@ class Utils:
             results = self.sp.next(results)
             nest_func()
 
-    # ===== JSON READ/WRITE =====
+    # === JSON READ/WRITE ===
     def read_json(self, filename: str) -> dict:
         """ Given a filename (without .json), loads data from JSON file and returns it. """
         with open(filename + '.json', 'r') as in_file:
             data = json.load(in_file)
-
         return data
 
     def write_json(self, filename: str, data: dict, indent: int = 4):
@@ -61,7 +61,7 @@ class Utils:
         with open(filename + '.json', 'w+') as out_file:
             json.dump(data, out_file, indent=indent)
 
-    # ===== ISOSTRING STUFF =====
+    # === ISOSTRING STUFF ===
     def convert_from_isostring(self, isostring: str) -> datetime:
         """ Converts ISO string to datetime object. """
         # return datetime.strptime(isostring, "%Y-%m-%dT%H:%M:%SZ")
@@ -75,7 +75,7 @@ class Utils:
 
         return datetime.strftime(datetime_obj, "%Y-%m-%dT%H:%M:%SZ")
 
-    # ===== TIME RECORDING =====
+    # === TIME RECORDING ===
     def get_time_checked(self, filename: str = 'time_checked') -> datetime:
         """ Returns the time checked from the JSON file. """
         time_string = self.read_json(filename)[filename]
@@ -86,7 +86,7 @@ class Utils:
         time_string = self.convert_to_isostring(time_checked)
         self.write_json(filename, {filename: time_string})
 
-    # ===== LIST TOOLS =====
+    # === LIST TOOLS ===
     def not_in(self, pulling_from: list, avoding: list) -> list:
         """ Returns a list without the items in the avoiding list. """
         return [item for item in pulling_from if item not in avoding]
@@ -100,7 +100,7 @@ class Utils:
         for i in range(0, len(track_list), n):
             yield track_list[i:i + n]
 
-    # ===== PLAYLIST NAME/ID CONVERSION =====
+    # === PLAYLIST NAME/ID CONVERSION ===
     def playlist_name_from_id(self, playlist_id: str) -> str:
         """ Given the playlist ID, returns the playlist name. """
         return self.sp.playlist(playlist_id)['name']
@@ -121,7 +121,7 @@ class Utils:
                 if pl['name'] == playlist_name:
                     return pl['id']
 
-    # ===== ID EXTRACTION FROM LINK =====
+    # === ID EXTRACTION FROM LINK ===
     def extract_id_link(self, link: str) -> str:
         """ Extracts the ID from a Spotify link and returns the ID. """
         id_garble = link.split('/')[4]  # splits link at slashes and grabs the last bit (ID + query)
@@ -134,7 +134,7 @@ class Utils:
             extracted_ids.append(self.extract_id_link(l))
         return extracted_ids
 
-    # ===== ID TREE GENERATION =====
+    # === ID TREE GENERATION ===
     def gen_id_tree(self, name_tree: dict, name_id_pairs: dict, id_tree_file: str):
         """ Runs function to generate ID tree and then writes it to JSON file. """
         self.rec_gen_id(name_tree, name_id_pairs)
@@ -157,7 +157,7 @@ class Utils:
             # pop the old pair with the key still being the name instead of the ID
             name_tree.pop(playlist)
 
-    # ===== ID TREE REVERSAL ===== (for checking if ID tree is right)
+    # === ID TREE REVERSAL === (for checking if ID tree is right)
     def reverse_id_tree(self, id_tree: dict, id_tree_file: str):
         """ Runs function to reverse ID tree and then writes it to JSON file. """
         self.reverse_gen_id(id_tree)
@@ -179,7 +179,7 @@ class Utils:
             # pop the old pair with the key still being the ID instead of the name
             id_tree.pop(playlist)
 
-# ===== TREE TRAVERSAL =====
+# === TREE TRAVERSAL ===
 """
 NOTE: This would be a big refactoring task but
 I think I should try to make a tree traversal function
