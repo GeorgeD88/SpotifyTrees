@@ -1,6 +1,5 @@
 from datetime import datetime
 from datapipe import Datapipe
-from random_tools import Extra
 from creds import *
 from constants import *
 import spotipy
@@ -8,15 +7,10 @@ import spotipy
 
 class Orgo:
 
-    # API Call Limits
-    ADD_MAX = 100
-    DEL_MAX = 50
-
     def __init__(self) -> None:
         self.datapipe = Datapipe(CLIENT_ID, CLIENT_SECRET, SPOTIPY_REDIRECT_URI)
         self.sp = self.datapipe.sp
         self.utils = self.datapipe.utils
-        self.extra = Extra(self.sp, self.utils)
 
     # ===== MAIN ORGOMASTER FUNCTION =====
     def update_playlist_tree(self, tree_of_ids: dict) -> list:
