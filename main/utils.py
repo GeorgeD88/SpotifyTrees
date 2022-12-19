@@ -3,6 +3,7 @@ import spotipy
 
 # Other
 from datetime import datetime, timedelta
+from collections.abc import Generator
 from copy import copy
 import json
 
@@ -18,7 +19,7 @@ class Utils:
         scope_string = ''
         for scp in list_of_scopes:
             scope_string += scp + ' '
-        # print(scope_string := scope_string[:-1])
+        scope_string = scope_string[:-1]  # trims extra space
         return scope_string
 
     # === PAGE ALL RESULTS ===
@@ -35,45 +36,54 @@ class Utils:
             results = self.sp.next(results)
             nested_func()
 
-    # === JSON READ/WRITE ===
-    def read_json(self, filename: str) -> dict:
-        """ Given a filename (without .json), loads data from JSON file and returns it. """
-        with open(filename + '.json', 'r') as in_file:
-            data = json.load(in_file)
-        return data
+    # === ID TREE GENERATION ===
+    def convert_name_tree(self, name_tree: dict, name_id_pairs: dict, id_tree_file: str):
+        """ Wrapper function that generates ID tree then writes it to a JSON file. """
+        self.rec_gen_id(name_tree, name_id_pairs)
+        self.write_json(id_tree_file + '_ids', name_tree)
 
-    def write_json(self, filename: str, data: dict, indent: int = 4):
-        """ Given a filename (without .json) and dict, writes dict to JSON file. """
-        with open(filename + '.json', 'w+') as out_file:
-            json.dump(data, out_file, indent=indent)
+    def generate_id_tree_inplace(self, sp_tree: dict, name_id_pairs: dict):
+        """ Recurses through tree of playlist names and converts each name into an ID (converts inplace). """
+        # post order traversal, because we recurse the children first then convert the roots
+        for children in sp_tree.values():
+            if isinstance(children, dict) is True:
+                self.generate_id_tree_inplace(children, name_id_pairs)
+            elif children is None:
+                # TODO: test this, not exactly sure how this would work
+                pass  # child doesn't exist/is a leaf
+            else:
+                raise TypeError('expected dict, list, or None, got: ' + str(children))
 
-    # === ISOSTRING STUFF ===
-    def convert_from_isostring(self, isostring: str) -> datetime:
-        """ Converts ISO string to datetime object. """
-        # return datetime.strptime(isostring, "%Y-%m-%dT%H:%M:%SZ")
-        return datetime.fromisoformat(isostring[:-1])  # ISO 8601
+        # converts every playlist root in the forest from name to ID
+        for playlist in copy(list(sp_tree.keys())):
+            # adds same value with new key (ID) then deletes old key (name)
+            new_key = name_id_pairs[playlist]  # get new key (ID)
+            sp_tree[new_key] = sp_tree[playlist]  # add new
+            sp_tree.pop(playlist)  # pop old
 
-    def convert_to_isostring(self, datetime_obj: datetime) -> str:
-        """ Converts datetime object to ISO string. """
-        if datetime_obj.microsecond >= 500_000:  # rounds the milliseconds to the nearest second
-            datetime_obj += timedelta(seconds=1)
-        datetime_obj = datetime_obj.replace(microsecond=0)  # then trims off milliseconds
+    # === ID TREE REVERSAL === (for checking if ID tree is right)
+    def reverse_id_tree(self, id_tree: dict, id_tree_file: str):
+        """ Runs function to reverse ID tree and then writes it to JSON file. """
+        self.reverse_gen_id(id_tree)
+        self.write_json(id_tree_file + '_reverse', id_tree)
 
-        return datetime.strftime(datetime_obj, "%Y-%m-%dT%H:%M:%SZ")
+    def generate_name_tree_inplace(self, sp_tree: dict):
+        """ Recurses through tree of playlist IDs and converts each ID back into a name.
+        (for testing if the generate ID tree is correct) """
+        for children in sp_tree.values():
+            if type(children) is dict:
+                self.generate_name_tree_inplace(children)
+            elif children is None:
+                pass  # the key would've already been converted
+            else:
+                raise TypeError('expected dict, list, or None, got: ' + str(children))
 
-    # === LIST TOOLS ===
-    def not_in(self, pulling_from: list, avoding: list) -> list:
-        """ Returns a list without the items in the avoiding list. """
-        return [item for item in pulling_from if item not in avoding]
-
-    def extend_nodup(self, orig: list, new: list):
-        """ Performs the list.extend() on the list itself (by reference) but avoids duplicates. """
-        orig.extend(self.not_in(new, orig))
-
-    def divide_chunks(self, track_list: list, n: int):
-        """ Generator that given a list will yield chunks of size n. """
-        for i in range(0, len(track_list), n):
-            yield track_list[i:i + n]
+        # converts every playlist root in the forest from ID to name
+        for playlist in copy(list(sp_tree.keys())):
+            # adds same value with new key (name) then deletes old key (ID)
+            new_key = self.playlist_name_from_id(playlist)  # gets new key (name)
+            sp_tree[new_key] = sp_tree[playlist]  # add new
+            sp_tree.pop(playlist)  # pop old
 
     # === PLAYLIST NAME/ID CONVERSION ===
     def playlist_name_from_id(self, playlist_id: str) -> str:
@@ -81,10 +91,10 @@ class Utils:
         return self.sp.playlist(playlist_id)['name']
 
     def playlist_id_from_name(self, playlist_name: str) -> str:
-        """ Given the playlist name, returns the playlist ID. """
+        """ COSTLY!! Given the playlist name, returns the playlist ID. """
         results = self.sp.current_user_playlists()  # gets all of user's playlists
 
-        # Contiously traverses the playlists until the playlist whose names matches is found and returns its ID.
+        # Continuously traverses the playlists until the playlist whose names matches is found and returns its ID.
         for pl in results['items']:
             if pl['name'] == playlist_name:
                 return pl['id']
@@ -96,63 +106,64 @@ class Utils:
                 if pl['name'] == playlist_name:
                     return pl['id']
 
+        # if the name wasn't found during the traversal, then it wasn't found so return None
+        return None
+
     # === ID EXTRACTION FROM LINK ===
     def extract_id_link(self, link: str) -> str:
         """ Extracts the ID from a Spotify link and returns the ID. """
         id_garble = link.split('/')[4]  # splits link at slashes and grabs the last bit (ID + query)
-        return id_garble.split('?')[0]  # splits garble at ? and saves first part only (ID)
+        return id_garble.split('?')[0]  # splits garble at ? and returns first part only (ID)
 
-    def extract_many_id_link(self, links: list) -> list:
-        """ Extracts the IDs from a list of spotify links and returns the IDs as a list. """
+    def extract_many_id_link(self, links: list[str]) -> list[str]:
+        """ Extracts the IDs from a list of Spotify links. """
         extracted_ids = []
         for l in links:
             extracted_ids.append(self.extract_id_link(l))
         return extracted_ids
 
-    # === ID TREE GENERATION ===
-    def gen_id_tree(self, name_tree: dict, name_id_pairs: dict, id_tree_file: str):
-        """ Runs function to generate ID tree and then writes it to JSON file. """
-        self.rec_gen_id(name_tree, name_id_pairs)
-        self.write_json(id_tree_file + '_ids', name_tree)
+    # === JSON READ/WRITE ===
+    def read_json(self, filename: str) -> dict:
+        """ Given a filename (without .json), loads data from JSON file and returns it. """
+        with open(filename + '.json', 'r') as in_file:
+            data = json.load(in_file)
+        return data
 
-    def rec_gen_id(self, name_tree: dict, name_id_pairs: dict):
-        """ Recurses through tree of playlist names and converts each name into an ID. """
-        for subplaylist in name_tree.values():
-            if type(subplaylist) is dict:
-                self.rec_gen_id(subplaylist, name_id_pairs)
-            elif subplaylist is None:
-                pass  # the key would've already been converted
-            else:
-                raise TypeError(
-                    'expected dict, list, or None, got: ' + str(subplaylist))
+    def write_json(self, filename: str, data: dict, indent: int = 4):
+        """ Given a filename (without .json) and dict, dumps dict to JSON file. """
+        with open(filename + '.json', 'w+') as out_file:
+            json.dump(data, out_file, indent=indent)
 
-        for playlist in copy(list(name_tree.keys())):
-            # add key with new ID but same value
-            name_tree[name_id_pairs[playlist]] = name_tree[playlist]
-            # pop the old pair with the key still being the name instead of the ID
-            name_tree.pop(playlist)
+    # === ISOSTRING STUFF ===
+    def convert_from_isostring(self, isostring: str) -> datetime:
+        """ Converts ISO string to datetime object. """
+        # return datetime.strptime(isostring, "%Y-%m-%dT%H:%M:%SZ")
+        return datetime.fromisoformat(isostring[:-1])  # ISO 8601
 
-    # === ID TREE REVERSAL === (for checking if ID tree is right)
-    def reverse_id_tree(self, id_tree: dict, id_tree_file: str):
-        """ Runs function to reverse ID tree and then writes it to JSON file. """
-        self.reverse_gen_id(id_tree)
-        self.write_json(id_tree_file + '_reverse', id_tree)
+    def convert_to_isostring(self, datetime_obj: datetime) -> str:
+        """ Converts datetime object to ISO string. """
+        # rounds the milliseconds to the nearest second
+        if datetime_obj.microsecond >= 500000:
+            datetime_obj += timedelta(seconds=1)
+        datetime_obj = datetime_obj.replace(microsecond=0)  # then trims off milliseconds
 
-    def reverse_gen_id(self, id_tree: dict):
-        """ Recurses through tree of playlist IDs and converts each ID back into a name. """
-        for subplaylist in id_tree.values():
-            if type(subplaylist) is dict:
-                self.reverse_gen_id(subplaylist)
-            elif subplaylist is None:
-                pass  # the key would've already been converted
-            else:
-                raise TypeError('expected dict, list, or None, got: ' + str(subplaylist))
+        return datetime.strftime(datetime_obj, "%Y-%m-%dT%H:%M:%SZ")
 
-        for playlist in copy(list(id_tree.keys())):
-            # add key with new name but same value
-            id_tree[self.playlist_name_from_id(playlist)] = id_tree[playlist]
-            # pop the old pair with the key still being the ID instead of the name
-            id_tree.pop(playlist)
+    # === LIST TOOLS ===
+    def filter_items(self, orig_list: list, to_filter: set) -> list:
+        """ Returns a list without the items in the avoiding list (inplace). """
+        def filter_func(item):
+            return item not in to_filter
+        return list(filter(filter_func, orig_list))
+
+    def extend_nodupes(self, orig_list: list, extension: list):
+        """ Performs the list.extend() on the list itself (by reference) but avoids duplicates. """
+        orig_list.extend(self.filter_items(extension, orig_list))
+
+    def divide_chunks(self, track_list: list, chunk_size: int) -> Generator[list]:
+        """ Splits given list into chunks of given chunk size and yields them. """
+        for i in range(0, len(track_list), chunk_size):
+            yield track_list[i:i + chunk_size]
 
     # === MISCELLANEOUS ===
     def print_track_names(self, tracks: list):
@@ -160,12 +171,7 @@ class Utils:
         for tr in tracks:
             print(self.sp.track(tr)['name'])
 
-    def filter_null(self, cleaning: list):
-        """ Removes all None objects from a list. """
-        cleaned = []
-        # adds every non-Null item to new list
-        for elem in cleaning:
-            if elem is not None:
-                cleaned.append(elem)
-        # sets original list reference to cleaned list
-        cleaning = cleaned
+    def filter_null(self, cleaning: list) -> list:
+        """ Removes all None values from the given list. """
+        cleaned = [item for item in cleaning if item is not None]
+        return cleaned
