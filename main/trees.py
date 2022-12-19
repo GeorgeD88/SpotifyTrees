@@ -14,9 +14,9 @@ class Trees:
 
     def __init__(self) -> None:
         # Spotipy is initialized in datapipe because it handles the API/data stuff
-        self.datapipe = Datapipe(CLIENT_ID, CLIENT_SECRET, SPOTIPY_REDIRECT_URI, SCOPES)
-        self.sp = self.datapipe.sp  # pull Spotipy instance out incase we need to make direct calls
-        self.utils = self.datapipe.utils  # use the same instance of utils in both datapipe and trees
+        self.dp = Datapipe(CLIENT_ID, CLIENT_SECRET, SPOTIPY_REDIRECT_URI, SCOPES)
+        self.sp = self.dp.sp  # pull Spotipy instance out incase we need to make direct calls
+        self.utils = self.dp.utils  # use the same instance of utils in both datapipe and trees
 
     def update_playlist_tree(self, tree_of_ids: dict) -> list:
         """ Combines all the function calls used to update the playlist tree into one function. """
@@ -92,7 +92,7 @@ class Trees:
 
     def push_new(self, playlist_id: str, tracks_add: list):
         """ Add tracks to Spotify playlists, while avoiding duplicates. """
-        playlist_tracks = self.datapipe.get_playlist_tracks(playlist_id)
+        playlist_tracks = self.dp.get_playlist_tracks(playlist_id)
         # removes existing tracks in playlist from list tracks to add
         new_tracks_only = self.utils.not_in(tracks_add, playlist_tracks)
 
@@ -152,7 +152,7 @@ class Trees:
         # iterates through every node (k) in this level and recurses its children (v)
         for k, v in nodes.items():
             if v is None:
-                leaf_tracks = self.datapipe.get_playlist_tracks(k)  # [1]
+                leaf_tracks = self.dp.get_playlist_tracks(k)  # [1]
                 self.utils.filter_null(leaf_tracks)
                 self.utils.extend_nodup(accum_tracks, leaf_tracks)  # [2]
                 subtree[k] = {'missing tracks': None, 'child playlists': None}  # [3]
@@ -161,7 +161,7 @@ class Trees:
                 child_tracks, child_subtree = self.check_topheavy(v)
 
                 # [2] get this playlist's tracks
-                parent_tracks = self.datapipe.get_playlist_tracks(k)
+                parent_tracks = self.dp.get_playlist_tracks(k)
                 self.utils.filter_null(parent_tracks)
 
                 # [3] find difference in playlists
@@ -199,7 +199,7 @@ class Trees:
             subtract_id (str): ID of the playlist to subtract
         """
         # TODO: make to check and only remove songs that are actually in the playlist to avoid errors
-        chunk = self.datapipe.get_playlist_tracks(subtract_id)
+        chunk = self.dp.get_playlist_tracks(subtract_id)
         self.subtract_chunk(playlist_id, chunk)
         print(f'removed playlist "{self.utils.playlist_name_from_id(subtract_id)}" ({len(chunk)} songs) from playlist {self.utils.playlist_name_from_id(playlist_id)}')
 
@@ -225,7 +225,7 @@ class Trees:
         """ Traverses the playlist tree and appends every playlist a track occurrence is found. """
         for k, v in plist_tree.items():
             if v is None:  # if this node is a leaf, then checks if any of the songs are in it
-                plist_tracks = self.datapipe.get_playlist_tracks(k)
+                plist_tracks = self.dp.get_playlist_tracks(k)
                 for tr in tracks:
                     if tr in plist_tracks:  # if this track is in this playlist
                         locations[tr].append(k)
@@ -233,7 +233,7 @@ class Trees:
                 self.pinpoint_song(tracks, v, locations)  # recurses into children and checks their locations first
 
                 # after checking children, checks this playlist itself
-                plist_tracks = self.datapipe.get_playlist_tracks(k)
+                plist_tracks = self.dp.get_playlist_tracks(k)
                 for tr in tracks:
                     if tr in plist_tracks:  # if this track is in this playlist
                         locations[tr].append(k)
