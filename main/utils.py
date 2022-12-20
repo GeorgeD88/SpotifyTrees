@@ -38,10 +38,10 @@ class Utils:
             results = self.sp.next(results)
             nested_func()
 
-    # === ID TREE GENERATION ===
+    # === ID/NAME/etc. TREE GENERATION ===
     def convert_name_tree(self, name_tree: dict, name_id_pairs: dict, id_tree_file: str):
         """ Wrapper function that generates ID tree then writes it to a JSON file. """
-        self.rec_gen_id(name_tree, name_id_pairs)
+        self.generate_id_tree_inplace(name_tree, name_id_pairs)
         self.write_json(id_tree_file + '_ids', name_tree)
 
     def generate_id_tree_inplace(self, sp_tree: dict, name_id_pairs: dict):
@@ -51,7 +51,7 @@ class Utils:
             if isinstance(children, dict) is True:
                 self.generate_id_tree_inplace(children, name_id_pairs)
             elif children is None:
-                # TODO: test this, not exactly sure how this would work
+                # TODO: figure out why this runs
                 pass  # child doesn't exist/is a leaf
             else:
                 raise TypeError('expected dict, list, or None, got: ' + str(children))
@@ -63,10 +63,9 @@ class Utils:
             sp_tree[new_key] = sp_tree[playlist]  # add new
             sp_tree.pop(playlist)  # pop old
 
-    # === ID TREE REVERSAL === (for checking if ID tree is right)
     def reverse_id_tree(self, id_tree: dict, id_tree_file: str):
         """ Runs function to reverse ID tree and then writes it to JSON file. """
-        self.reverse_gen_id(id_tree)
+        self.generate_name_tree_inplace(id_tree)
         self.write_json(id_tree_file + '_reverse', id_tree)
 
     def generate_name_tree_inplace(self, sp_tree: dict):
@@ -84,6 +83,30 @@ class Utils:
         for playlist in copy(list(sp_tree.keys())):
             # adds same value with new key (name) then deletes old key (ID)
             new_key = self.playlist_name_from_id(playlist)  # gets new key (name)
+            sp_tree[new_key] = sp_tree[playlist]  # add new
+            sp_tree.pop(playlist)  # pop old
+
+    def convert_link_tree(self, id_tree: dict, link_tree_file: str):
+        """ Wrapper function that generates ID tree then writes it to a JSON file. """
+        self.generate_link_tree_inplace(id_tree)
+        self.write_json(link_tree_file + '_links', id_tree)
+
+    def generate_link_tree_inplace(self, sp_tree: dict):
+        """ Converts playlist IDs into links (converts inplace). """
+        # post order traversal, because we recurse the children first then convert the roots
+        for children in sp_tree.values():
+            if isinstance(children, dict) is True:
+                self.generate_link_tree_inplace(children)
+            elif children is None:
+                # TODO: test this, not exactly sure how this would work
+                pass  # child doesn't exist/is a leaf
+            else:
+                raise TypeError('expected dict, list, or None, got: ' + str(children))
+
+        # converts every playlist root in the forest from name to ID
+        for playlist in copy(list(sp_tree.keys())):
+            # adds same value with new key (ID) then deletes old key (name)
+            new_key = self.build_playlist_url(playlist)  # build playlist URL
             sp_tree[new_key] = sp_tree[playlist]  # add new
             sp_tree.pop(playlist)  # pop old
 
@@ -111,7 +134,7 @@ class Utils:
         # if the name wasn't found during the traversal, then it wasn't found so return None
         return None
 
-    # === ID EXTRACTION FROM LINK ===
+    # === LINK & ID CONVERSION ===
     def extract_id_link(self, link: str) -> str:
         """ Extracts the ID from a Spotify link and returns the ID. """
         id_garble = link.split('/')[4]  # splits link at slashes and grabs the last bit (ID + query)
@@ -123,6 +146,10 @@ class Utils:
         for l in links:
             extracted_ids.append(self.extract_id_link(l))
         return extracted_ids
+
+    def build_playlist_url(self, playlist_id: str) -> str:
+        """ Builds Spotify playlist URL with given playlist ID. """
+        return 'https://open.spotify.com/playlist/' + playlist_id
 
     # === JSON READ/WRITE ===
     def read_json(self, filename: str) -> dict:
