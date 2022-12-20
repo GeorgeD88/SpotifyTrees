@@ -36,12 +36,11 @@ class Datapipe:
         def nested():
             playlists.extend([plist['id'] for plist in results['items']])
 
-        self.utils.page_all_results(nested, results)
-        """ nested()  # extract from initial results
+        nested()  # extract from initial results
         while results['next']:  # page as long as there are more results
             results = self.sp.next(results)
             nested()  # extract IDs from paged results
- """
+
         return playlists
 
     def get_user_playlist_names(self) -> list[str]:
@@ -53,12 +52,11 @@ class Datapipe:
         def nested():
             playlists.extend([plist['name'] for plist in results['items']])
 
-        self.utils.page_all_results(nested, results)
-        """ nested()  # extract from initial results
+        nested()  # extract from initial results
         while results['next']:  # page as long as there are more results
             results = self.sp.next(results)
             nested()  # extract names from paged results
- """
+
         return playlists
 
     def playlists_name_id_pair(self) -> dict[str: str]:
@@ -85,12 +83,11 @@ class Datapipe:
                 else:  # else simply add this new found playlist
                     playlists[plist['name']] = plist['id']
 
-        self.utils.page_all_results(nested, results)
-        """ nested()  # extract from initial results
+        nested()  # extract from initial results
         while results['next']:  # page as long as there are more results
             results = self.sp.next(results)
             nested()  # extract names & IDs from paged results
- """
+
         return playlists
 
     def playlists_id_name_pair(self) -> dict[str: str]:
@@ -104,12 +101,11 @@ class Datapipe:
                 if plist['id'] not in playlists:
                     playlists[plist['id']] = plist['name']
 
-        self.utils.page_all_results(nested, results)
-        """ nested()  # extract from initial results
+        nested()  # extract from initial results
         while results['next']:  # page as long as there are more results
             results = self.sp.next(results)
             nested()  # extract IDs & names from paged results
- """
+
         return playlists
 
     # === PLAYLIST CREATION/MANAGEMENT ===
@@ -134,12 +130,11 @@ class Datapipe:
         def nested():
             tracks.extend([track['track']['id'] for track in results['items']])
 
-        self.utils.page_all_results(nested, results)
-        """ nested()  # extract from initial results
+        nested()  # extract from initial results
         while results['next']:  # page as long as there are more results
             results = self.sp.next(results)
             nested()  # extract IDs from paged results
- """
+
         return tracks
 
     def get_playlist_track_names(self, playlist_id: str) -> list[str]:
@@ -151,12 +146,11 @@ class Datapipe:
         def nested():
             tracks.extend([track['track']['name'] for track in results['items']])
 
-        self.utils.page_all_results(nested, results)
-        """ nested()  # extract from initial results
+        nested()  # extract from initial results
         while results['next']:  # page as long as there are more results
             results = self.sp.next(results)
             nested()  # extract names from paged results
- """
+
         return tracks
 
     def get_playlist_tracks_dates(self, playlist_id: str) -> dict[str: datetime]:
@@ -169,12 +163,11 @@ class Datapipe:
             for track in results['items']:
                 dates_added[track['track']['id']] = self.utils.convert_from_isostring(track['added_at'])
 
-        self.utils.page_all_results(nested, results)
-        """ nested()  # extract from initial results
+        nested()  # extract from initial results
         while results['next']:  # page as long as there are more results
             results = self.sp.next(results)
             nested()  # extract IDs & dates from paged results
- """
+
         return dates_added
 
     def get_playlist_artists(self, playlist_id: str) -> list[str]:
@@ -186,12 +179,11 @@ class Datapipe:
         def nested():
             artists.update(set(t['track']['artists'][0]['id'] for t in results['items']))
 
-        self.utils.page_all_results(nested, results)
-        """ nested()  # extract from initial results
+        nested()  # extract from initial results
         while results['next']:  # page as long as there are more results
             results = self.sp.next(results)
             nested()  # extract IDs from paged results
- """
+
         return list(artists)
 
     # def get_unsaved_tracks(self, playlist_id: str) -> dict:
