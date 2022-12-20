@@ -22,7 +22,9 @@ class Utils:
         scope_string = scope_string[:-1]  # trims extra space
         return scope_string
 
-    # === PAGE ALL RESULTS ===
+    # === PAGE ALL RESULTS === FIXME: these don't work correctly for some reason, ask Samer about them
+    # TODO: implement it where you also do the list definition and extending here, and only pass the inner list you make at each extension
+
     def page_all_results(self, nested_func, results: dict):
         """ Automatically pages through data from API call and runs given function on every result. """
         nested_func()
