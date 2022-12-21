@@ -5,6 +5,7 @@ import spotipy
 from datetime import datetime, timedelta
 from collections.abc import Generator
 from copy import copy
+from os import path
 import json
 
 
@@ -162,6 +163,10 @@ class Utils:
         """ Given a filename (without .json) and dict, dumps dict to JSON file. """
         with open(filename + '.json', 'w+') as out_file:
             json.dump(data, out_file, indent=indent)
+
+    def json_file_exists(self, filename: str) -> bool:
+        """ Checks if file with given filename exists. """
+        return path.exists(filename + '.json')
 
     # === ISOSTRING STUFF ===
     def convert_from_isostring(self, isostring: str) -> datetime:
