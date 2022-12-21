@@ -7,6 +7,7 @@ from utils import Utils
 from constants import *
 
 from datetime import datetime
+import os, shutil  # for file handling
 
 
 class Datapipe:
@@ -128,7 +129,10 @@ class Datapipe:
 
         # define nested function to extract all IDs from current page of results
         def nested():
-            tracks.extend([track['track']['id'] for track in results['items']])
+            for track in results['items']:
+                # ignores null IDs this way so that you don't have to filter them later
+                if track['track']['id'] is not None:
+                    tracks.append(track['track']['id'])
 
         nested()  # extract from initial results
         while results['next']:  # page as long as there are more results
@@ -185,6 +189,34 @@ class Datapipe:
             nested()  # extract IDs from paged results
 
         return list(artists)
+
+    # === CACHE API CALLS ===
+    def initialize_playlist_tracks_cache(self):
+        """ Initialize cache location by making the folder to store the cached playlist tracks. """
+        os.makedirs(PLAYLIST_CACHE_PATH)
+
+    def destroy_playlist_tracks_cache(self):
+        """ Initialize cache location by making the folder to store the cached playlist tracks. """
+        shutil.rmtree(PLAYLIST_CACHE_PATH)
+
+    def get_playlist_tracks_cached(self, playlist_id: str) -> list[str]:
+        """ Wrapper that caches calls to get playlist tracks. """
+        # if file with playlist tracks already exists, returns cached data
+        if self.utils.json_file_exists(playlist_id) is True:
+            playlist_tracks = self.load_cached_playlist_tracks(playlist_id)
+        # else makes the API call for the first time and caches the data before returning it
+        else:
+            playlist_tracks = self.get_playlist_tracks(playlist_id)
+            self.cache_playlist_tracks(playlist_id, playlist_tracks)
+        return playlist_tracks
+
+    def cache_playlist_tracks(self, playlist_id: str, playlist_tracks: list[str]):
+        """ Dumps playlists tracks to JSON file to cache them. """
+        self.utils.write_json(playlist_id, {'id': playlist_id, 'tracks': playlist_tracks})
+
+    def load_cached_playlist_tracks(self, playlist_id: str) -> list[str]:
+        """ Loads cached playlist tracks from JSON file and returns them. """
+        return self.utils.read_json(playlist_id)['tracks']
 
     # def get_unsaved_tracks(self, playlist_id: str) -> dict:
     #     """ Finds out what songs in a playlist are not saved and returns a dict of track IDs and corresponding booleans.

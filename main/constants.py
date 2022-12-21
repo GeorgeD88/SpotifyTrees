@@ -1,6 +1,8 @@
 GET_MAX = DEL_MAX = 50
 ADD_MAX = 100
 
+PLAYLIST_CACHE_PATH = 'playlist tracks cache'
+
 SCOPES = [
     "playlist-modify-private",
     # "playlist-read-private",
