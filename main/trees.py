@@ -18,28 +18,67 @@ class Trees:
         self.sp = self.dp.sp  # pull Spotipy instance out incase we need to make direct calls
         self.utils = self.dp.utils  # use the same instance of utils in both datapipe and trees
 
-    def update_playlist_tree(self, tree_of_ids: dict) -> list:
+    # === SPOTIFY TREES ===
+    def update_playlist_tree(self, id_tree: dict) -> list:
         """ Combines all the function calls used to update the playlist tree into one function. """
-        last_checked = self.utils.get_time_checked()  # gets time of last program run (last checked)
+        last_checked = self.get_time_checked()  # gets time of last program run (last checked)
         print('finding new songs!')
-        new_songs = self.traverse_playlists(tree_of_ids, last_checked)  # updates tree and returns new songs found
-        current = datetime.utcnow()  # gets current time to update time last checked
-        self.utils.record_time_checked(current)  # records to JSON the time finished checking
+        print('='*18)
+        new_songs = self.update_playlists(id_tree, last_checked)  # updates tree and returns new songs found
+        current_time = datetime.utcnow()  # gets current time to update time last checked
+        self.record_time_checked(current_time)  # records the time finished checking to JSON
+        self.dp.destroy_cache()  # destroys cache created during runtime
+        # TODO: make sure that you can use the same playlist tracks state and that it's not important for it to keep calling
+        # cause maybe it's significant for it to keep calling cause it needs the state of the playlist after adding shit during a recursion or something
 
         # NOTE: songs returned by function are only new to EDM I think,
         # so if it's new in a child but already in EDM it might not show up in the end I think :/
+        # TODO: test this theory ^^
 
         # prints all new songs found
         if len(new_songs) > 0:
-            print(f'-----------------\n{len(new_songs)} new songs found:')
+            to_print = f'{len(new_songs)} new songs found:'
+            print(f"{'-'*len(to_print)}\n{to_print}")
             self.utils.print_track_names(new_songs)
         else:
-            print(f'-----------------\nno new songs found!')
+            print('-'*19 + '\nno new songs found!')
 
         return new_songs
 
+    # was: traverse_playlists()
+    def update_playlists(self, forest: dict, last_checked: datetime) -> list:
+        """ Repeatedly pushes newly added songs to all parent nodes. """
+        new_tracks = []  # defines list for new tracks collectively found in this level
 
-    def check_new(self, playlist_id: str, last_checked: datetime) -> list:
+        # iterates through every node (k) in this level and recurses its children (v)
+        for root, children in forest.items():
+            if children is None:  # root is a leaf, so grab the new songs and add to tracks found
+                leaf_tracks = self.newly_added_tracks(root, last_checked)
+                self.utils.extend_nodupes(new_tracks, leaf_tracks)
+            else:  # else it has children so recurse down first then push the new tracks found
+                # [1] get new tracks from child nodes
+                children_new = self.update_playlists(children, last_checked)
+
+                # [2] get new tracks of this node but hold it in a temp first
+                here_new = self.utils.filter_items(self.newly_added_tracks(root, last_checked), new_tracks)
+
+                self.utils.filter_null(children_new)  # removes all Nones from list first cause that's a new problem idk why,
+                                                         # I think it's cause of the new local files it's starting to include those in the list ig
+
+                # [3] push children's new tracks to this node
+                if len(children_new) > 0:
+                    self.push_new_tracks(root, children_new)
+
+                # [4] combine new and child
+                self.utils.extend_nodupes(children_new, here_new)  # children_new + here_new
+                # [5] add combo of new and child to new_tracks
+                self.utils.extend_nodupes(new_tracks, children_new)  # new_tracks + (children_new + here_new)
+
+        self.utils.filter_null(new_tracks)
+        return new_tracks
+
+    # was: check_new()
+    def newly_added_tracks(self, playlist_id: str, last_checked: datetime) -> list:
         """ Finds new tracks in playlist added after the playlist tree was last updated/checked. """
         results = self.sp.playlist_tracks(playlist_id)  # first pull of tracks from playlist
         new_tracks = []  # defines list for new tracks found
@@ -57,44 +96,12 @@ class Trees:
 
         return new_tracks
 
-
-    def traverse_playlists(self, nodes: dict, last_checked: datetime) -> list:
-        """ Traverses the playlist tree and pushes all new songs found up the tree. """
-        new_tracks = []  # defines list for new tracks collectively found in this level
-
-        # iterates through every node (k) in this level and recurses its children (v)
-        for k, v in nodes.items():
-            if v is None:  # if this node is a leaf, then grab the new songs and add to tracks found
-                leaf_tracks = self.check_new(k, last_checked)
-                self.utils.extend_nodup(new_tracks, leaf_tracks)
-            else:  # else it has children so recurse down first then push the new tracks found
-                # [1] get new tracks from child nodes
-                children_new = self.traverse_playlists(v, last_checked)
-
-                # [2] get new tracks of this node but hold it in a temp first
-                here_new = self.utils.not_in(self.check_new(k, last_checked), new_tracks)
-
-                self.utils.filter_null(children_new)  # removes all Nones from list first cause that's a new problem idk why,
-                                                         # I think it's cause of the new local files it's starting to include those in the list ig
-
-                # [3] push children's new tracks to this node
-                if len(children_new) > 0:
-                    self.push_new(k, children_new)
-
-                # [4] combine new and child
-                self.utils.extend_nodup(children_new, here_new)  # children_new + here_new
-                # [5] add combo of new and child to new_tracks
-                self.utils.extend_nodup(new_tracks, children_new)  # new_tracks + (children_new + here_new)
-
-        self.utils.filter_null(new_tracks)
-        return new_tracks
-
-
-    def push_new(self, playlist_id: str, tracks_add: list):
+    # was: push new
+    def push_new_tracks(self, playlist_id: str, tracks_add: list):
         """ Add tracks to Spotify playlists, while avoiding duplicates. """
-        playlist_tracks = self.dp.get_playlist_tracks(playlist_id)
+        playlist_tracks = self.dp.get_playlist_tracks_cached(playlist_id)
         # removes existing tracks in playlist from list tracks to add
-        new_tracks_only = self.utils.not_in(tracks_add, playlist_tracks)
+        new_tracks_only = self.utils.filter_items(tracks_add, playlist_tracks)
 
         # checking if there are still any tracks to add after removing existing ones
         if len(new_tracks_only) > 0:
@@ -115,7 +122,7 @@ class Trees:
         else:
             print('new items in sub playlists already in: ' + self.utils.playlist_name_from_id(playlist_id))
 
-
+    # === MAINTAINING PLAYLIST TREE ===
     def check_topheavy(self, nodes: dict) -> tuple:
         """
         Traverses the playlist tree and finds out what tracks
@@ -154,7 +161,7 @@ class Trees:
             if v is None:
                 leaf_tracks = self.dp.get_playlist_tracks(k)  # [1]
                 self.utils.filter_null(leaf_tracks)
-                self.utils.extend_nodup(accum_tracks, leaf_tracks)  # [2]
+                self.utils.extend_nodupes(accum_tracks, leaf_tracks)  # [2]
                 subtree[k] = {'missing tracks': None, 'child playlists': None}  # [3]
             else:
                 # [1] get all child accumulated tracks
@@ -165,18 +172,17 @@ class Trees:
                 self.utils.filter_null(parent_tracks)
 
                 # [3] find difference in playlists
-                difference = self.utils.not_in(parent_tracks, child_tracks)  # get every song in this playlist that's not below this playlist
+                difference = self.utils.filter_items(parent_tracks, child_tracks)  # get every song in this playlist that's not below this playlist
 
                 # [4] record difference tracks
                 subtree[k] = {'missing tracks': difference, 'child playlists': child_subtree}
 
                 # [5] add this playlist to master accumulated list
-                self.utils.extend_nodup(accum_tracks, parent_tracks)
+                self.utils.extend_nodupes(accum_tracks, parent_tracks)
 
         return accum_tracks, subtree
 
-
-    # ===== PLAYLIST MATH =====
+    # == playlist math
     def subtract_chunk(self, playlist_id: str, chunk: list):
         """
         Subtract a list of track IDs from a playlist.
@@ -203,28 +209,7 @@ class Trees:
         self.subtract_chunk(playlist_id, chunk)
         print(f'removed playlist "{self.utils.playlist_name_from_id(subtract_id)}" ({len(chunk)} songs) from playlist {self.utils.playlist_name_from_id(playlist_id)}')
 
-
-    def cross_related_artists(self):
-        """
-            Goes through many artists and gets their related artists,
-                then crosses all the artists and returns list of most
-                seen artists across the pool of related artists and
-                sorts them by frequency.
-        """
-        self.sp.artist_related_artists()
-
-    # === TIME RECORDING ===
-    def get_time_checked(self, filename: str = 'time_checked') -> datetime:
-        """ Returns the time checked from the JSON file. """
-        time_string = self.read_json(filename)[filename]
-        return self.convert_from_isostring(time_string)
-
-    def record_time_checked(self, time_checked: datetime, filename: str = 'time_checked'):
-        """ Records the time checked into the JSON file. """
-        time_string = self.convert_to_isostring(time_checked)
-        self.write_json(filename, {filename: time_string})
-
-    # ===== FINDING SONGS IN TREE =====
+    # ===== FINDING SONGS IN THE TREE =====
     def locate_songs(self, tracks: list, plist_tree: dict) -> dict:
         """ Given a list of tracks, checks every playlist in the tree and returns a dict of their locations. """
         track_locations = {tr: [] for tr in tracks}  # creates a dict of track locations, each track is given an empty list.
@@ -257,15 +242,31 @@ class Trees:
     #           VERSUS
     # NOTE: find lowest spot of song
     # this can maybe be done by taking the first found in all locations,
-    # but I'm not sure if that works or I have to do it seperately
+    # but I'm not sure if that works or I have to do it separately
 
+    # === RANDOM COOL THING ===
+    def cross_related_artists(self):
+        """
+            Goes through many artists and gets their related artists,
+                then crosses all the artists and returns list of most
+                seen artists across the pool of related artists and
+                sorts them by frequency.
+        """
+        self.sp.artist_related_artists()
 
-# TODO: CHECK FOR MULTIPLE PLAYLISTS W/ SAME NAME AND RAISE THE CONFLICT
-# TODO: SEARCH FOR SONGS NOT IN EDM
-# TODO: SOMETHING ELSE I FORGOT FOR FIXING PAST JUNK
+    # === TIME RECORDING ===
+    def get_time_checked(self, filename: str = 'time_checked') -> datetime:
+        """ Returns the time checked from the JSON file. """
+        time_string = self.read_json(filename)[filename]
+        return self.convert_from_isostring(time_string)
 
+    def record_time_checked(self, time_checked: datetime, filename: str = 'time_checked'):
+        """ Records the time checked into the JSON file. """
+        time_string = self.convert_to_isostring(time_checked)
+        self.write_json(filename, {filename: time_string})
 
 """
+TODO: something interesting to try later
 recommendations(seed_artists=None,
 seed_genres=None, seed_tracks=None,
 limit=20, country=None, **kwargs)
