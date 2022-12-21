@@ -186,13 +186,13 @@ class Utils:
     # === LIST TOOLS ===
     def filter_items(self, orig_list: list, to_filter: set) -> list:
         """ Returns a list without the items in the avoiding list (inplace). """
-        def filter_func(item):
+        def filter_func(item) -> bool:
             return item not in to_filter
         return list(filter(filter_func, orig_list))
 
     def extend_nodupes(self, orig_list: list, extension: list):
         """ Performs the list.extend() on the list itself (by reference) but avoids duplicates. """
-        orig_list.extend(self.filter_items(extension, orig_list))
+        orig_list.extend(self.filter_items(extension, set(orig_list)))
 
     def divide_chunks(self, track_list: list, chunk_size: int) -> Generator[list]:
         """ Splits given list into chunks of given chunk size and yields them. """
