@@ -67,50 +67,47 @@ class Trees:
                 children_new = self.update_playlists(children, last_checked)
 
                 # [2] get new tracks of this node but hold it in a temp first
-                here_new = self.newly_added_tracks(root, last_checked)
-                """ TODO: I think technically LRU cache can deal with the caching
-                for us because it will save the return of the function, the return value being the list of IDs. """
-
-                """ FIXME: both newly_added_tracks and push_new_tracks pull the Spotify playlist's tracks,
-                so we should only make it pull once using the cache. the problem is that newly added tracks doesn't just need
-                a list of the track IDs, it needs the time added too so it has to do the crawling itself instead of using the method from datapipe.
-                maybe just make an extra function that runs above step 2 and make it generate both stuff, then just pass that data to both functions. """
+                root_new_tracks, playlist_tracks = self.newly_added_tracks(root, last_checked)
+                # we also grabbed playlist tracks as a set for use by push_new_tracks
 
                 # [3] push children's new tracks to this node
                 if len(children_new) > 0:
-                    self.push_new_tracks(root, children_new)
+                    self.push_new_tracks(root, playlist_tracks, children_new)
 
                 # [4] combine new and child
-                self.utils.extend_nodupes(children_new, here_new)  # children_new + here_new
+                self.utils.extend_nodupes(children_new, root_new_tracks)  # children_new + root_new_tracks
 
                 # [5] add combo of new and child to new_tracks
-                self.utils.extend_nodupes(new_tracks, children_new)  # new_tracks + (children_new + here_new)
+                self.utils.extend_nodupes(new_tracks, children_new)  # new_tracks + (children_new + root_new_tracks)
 
         return new_tracks
 
     # was: check_new()
-    def newly_added_tracks(self, playlist_id: str, last_checked: datetime) -> list:
+    def newly_added_tracks(self, playlist_id: str, last_checked: datetime) -> tuple[list, set]:
         """ Finds new tracks in playlist added after the playlist tree was last updated/checked. """
         results = self.sp.playlist_tracks(playlist_id)  # first pull of tracks from playlist
+        playlist_tracks = set()  # stores all playlist tracks
         new_tracks = []  # defines list for new tracks found
 
         def nested():
             for tr in results['items']:
-                # if the time the track was added is greater than the time last checked
-                if self.utils.convert_from_isostring(tr['added_at']) > last_checked:
-                    new_tracks.append(tr['track']['id'])  # then add the track ID to list of new tracks
+                # ignores null IDs this way so that you don't have to filter them later
+                if tr['track']['id'] is not None:
+                    playlist_tracks.add(tr['track']['id'])  # adds track to all playlist tracks
+                    # if the time the track was added is greater than the time last checked
+                    if self.utils.convert_from_isostring(tr['added_at']) > last_checked:
+                        new_tracks.append(tr['track']['id'])  # then add the track ID to list of new tracks
 
         nested()
         while results['next']:
             results = self.sp.next(results)
             nested()
 
-        return new_tracks
+        return new_tracks, playlist_tracks
 
     # was: push new
-    def push_new_tracks(self, playlist_id: str, tracks_add: list):
+    def push_new_tracks(self, playlist_id: str, playlist_tracks: set, tracks_add: list):
         """ Add tracks to Spotify playlists, while avoiding duplicates. """
-        playlist_tracks = self.dp.get_playlist_tracks(playlist_id)
         # removes existing tracks in playlist from list tracks to add
         new_tracks_only = self.utils.filter_items(tracks_add, playlist_tracks)
 
