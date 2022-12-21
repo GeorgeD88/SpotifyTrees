@@ -26,13 +26,11 @@ class Trees:
         print('finding new songs!')
         print('='*18)
 
-        self.dp.initialize_playlist_tracks_cache()  # initialize cache
         new_songs = self.update_playlists(id_tree, last_checked)  # updates tree and returns new songs found
 
         current_time = datetime.utcnow()  # gets current time to update time last checked
         self.record_time_checked(current_time)  # records the time finished checking to JSON
 
-        self.dp.destroy_cache()  # destroys cache created during runtime
         # TODO: make sure that you can use the same playlist tracks state and that it's not important for it to keep calling
         # cause maybe it's significant for it to keep calling cause it needs the state of the playlist after adding shit during a recursion or something
 
@@ -59,8 +57,8 @@ class Trees:
         for root, children in forest.items():
             # root is a leaf, so grab the new songs and add to tracks found
             if children is None:
-                leaf_tracks = self.newly_added_tracks(root, last_checked)
-                self.utils.extend_nodupes(new_tracks, leaf_tracks)
+                leaf_new_tracks, playlist_tracks = self.newly_added_tracks(root, last_checked)
+                self.utils.extend_nodupes(new_tracks, leaf_new_tracks)
             # else it has children so recurse down first before pushing this playlist's new tracks
             else:
                 # [1] get new tracks from children
@@ -265,13 +263,13 @@ class Trees:
     # === TIME RECORDING ===
     def get_time_checked(self, filename: str = 'time_checked') -> datetime:
         """ Returns the time checked from the JSON file. """
-        time_string = self.read_json(filename)[filename]
-        return self.convert_from_isostring(time_string)
+        time_string = self.utils.read_json(filename)[filename]
+        return self.utils.convert_from_isostring(time_string)
 
     def record_time_checked(self, time_checked: datetime, filename: str = 'time_checked'):
         """ Records the time checked into the JSON file. """
-        time_string = self.convert_to_isostring(time_checked)
-        self.write_json(filename, {filename: time_string})
+        time_string = self.utils.convert_to_isostring(time_checked)
+        self.utils.write_json(filename, {filename: time_string})
 
 """
 TODO: something interesting to try later
