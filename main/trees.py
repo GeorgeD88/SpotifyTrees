@@ -22,11 +22,16 @@ class Trees:
     def update_playlist_tree(self, id_tree: dict) -> list:
         """ Combines all the function calls used to update the playlist tree into one function. """
         last_checked = self.get_time_checked()  # gets time of last program run (last checked)
+
         print('finding new songs!')
         print('='*18)
+
+        self.dp.initialize_playlist_tracks_cache()  # initialize cache
         new_songs = self.update_playlists(id_tree, last_checked)  # updates tree and returns new songs found
+
         current_time = datetime.utcnow()  # gets current time to update time last checked
         self.record_time_checked(current_time)  # records the time finished checking to JSON
+
         self.dp.destroy_cache()  # destroys cache created during runtime
         # TODO: make sure that you can use the same playlist tracks state and that it's not important for it to keep calling
         # cause maybe it's significant for it to keep calling cause it needs the state of the playlist after adding shit during a recursion or something
@@ -50,20 +55,26 @@ class Trees:
         """ Repeatedly pushes newly added songs to all parent nodes. """
         new_tracks = []  # defines list for new tracks collectively found in this level
 
-        # iterates through every node (k) in this level and recurses its children (v)
+        # iterates through every tree in this forest level and recurses its children
         for root, children in forest.items():
-            if children is None:  # root is a leaf, so grab the new songs and add to tracks found
+            # root is a leaf, so grab the new songs and add to tracks found
+            if children is None:
                 leaf_tracks = self.newly_added_tracks(root, last_checked)
                 self.utils.extend_nodupes(new_tracks, leaf_tracks)
-            else:  # else it has children so recurse down first then push the new tracks found
-                # [1] get new tracks from child nodes
+            # else it has children so recurse down first before pushing this playlist's new tracks
+            else:
+                # [1] get new tracks from children
                 children_new = self.update_playlists(children, last_checked)
 
                 # [2] get new tracks of this node but hold it in a temp first
-                here_new = self.utils.filter_items(self.newly_added_tracks(root, last_checked), new_tracks)
+                here_new = self.newly_added_tracks(root, last_checked)
+                """ TODO: I think technically LRU cache can deal with the caching
+                for us because it will save the return of the function, the return value being the list of IDs. """
 
-                self.utils.filter_null(children_new)  # removes all Nones from list first cause that's a new problem idk why,
-                                                         # I think it's cause of the new local files it's starting to include those in the list ig
+                """ FIXME: both newly_added_tracks and push_new_tracks pull the Spotify playlist's tracks,
+                so we should only make it pull once using the cache. the problem is that newly added tracks doesn't just need
+                a list of the track IDs, it needs the time added too so it has to do the crawling itself instead of using the method from datapipe.
+                maybe just make an extra function that runs above step 2 and make it generate both stuff, then just pass that data to both functions. """
 
                 # [3] push children's new tracks to this node
                 if len(children_new) > 0:
@@ -71,10 +82,10 @@ class Trees:
 
                 # [4] combine new and child
                 self.utils.extend_nodupes(children_new, here_new)  # children_new + here_new
+
                 # [5] add combo of new and child to new_tracks
                 self.utils.extend_nodupes(new_tracks, children_new)  # new_tracks + (children_new + here_new)
 
-        self.utils.filter_null(new_tracks)
         return new_tracks
 
     # was: check_new()
