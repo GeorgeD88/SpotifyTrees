@@ -110,7 +110,7 @@ class Trees:
     # was: push new
     def push_new_tracks(self, playlist_id: str, tracks_add: list):
         """ Add tracks to Spotify playlists, while avoiding duplicates. """
-        playlist_tracks = self.dp.get_playlist_tracks_cached(playlist_id)
+        playlist_tracks = self.dp.get_playlist_tracks(playlist_id)
         # removes existing tracks in playlist from list tracks to add
         new_tracks_only = self.utils.filter_items(tracks_add, playlist_tracks)
 

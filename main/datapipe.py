@@ -7,7 +7,8 @@ from utils import Utils
 from constants import *
 
 from datetime import datetime
-import os, shutil  # for file handling
+from functools import cache
+import os, shutil
 
 
 class Datapipe:
@@ -122,6 +123,7 @@ class Datapipe:
             self.sp.playlist_add_items(playlist_id, chunk)
 
     # === PLAYLIST CONTENTS ===
+    @cache
     def get_playlist_tracks(self, playlist_id: str) -> list[str]:
         """ Returns all the tracks (IDs) in the given playlist. """
         results = self.sp.playlist_tracks(playlist_id)  # initial API call
