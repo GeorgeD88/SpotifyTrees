@@ -34,10 +34,6 @@ class Trees:
         # TODO: make sure that you can use the same playlist tracks state and that it's not important for it to keep calling
         # cause maybe it's significant for it to keep calling cause it needs the state of the playlist after adding shit during a recursion or something
 
-        # NOTE: songs returned by function are only new to EDM I think,
-        # so if it's new in a child but already in EDM it might not show up in the end I think :/
-        # TODO: test this theory ^^
-
         # prints all new songs found
         if len(new_songs) > 0:
             to_print = f'{len(new_songs)} new songs found:'
