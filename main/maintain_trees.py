@@ -91,7 +91,9 @@ class Maintain(Trees):
             playlist_id (str): ID of the playlist being removed from
             chunk (list): List of tracks to remove from playlist
         """
-        self.sp.playlist_remove_all_occurrences_of_items(playlist_id, chunk)
+        # Chunk tracks list into 100 items per request for API limit
+        for chnk in self.utils.divide_chunks(chunk, 100):
+            self.sp.playlist_remove_all_occurrences_of_items(playlist_id, chnk)
         print(f'removed {len(chunk)} songs from {self.utils.playlist_name_from_id(playlist_id)}')
 
     def minus_playlists(self, playlist_id: str, subtract_id: str):
